@@ -226,9 +226,10 @@ for rown in range(0, nrows):
           #print( vial_column, "=", vial_datarow[vial_column] )
           if pd.notnull(vial_datarow[vial_column]):
              new_value= str(vial_datarow[vial_column])
-             new_value=new_value.strip("'")
-             print("Updating", vial_column, "=", new_value, "for vial:", vial_barcode)
-             SQL_update_value = ('UPDATE vials SET ' + vial_column + ' = "%s" WHERE vial_barcode = %s ;' )
+             new_value=new_value.strip("\'")
+             print_value= '"' + new_value + '"'
+             print("Updating string", vial_column, "=", print_value, "for vial:", vial_barcode)
+             SQL_update_value = ('UPDATE vials SET ' + vial_column + ' = %s WHERE vial_barcode = %s ;' )
              #print(update_value, new_value, vial_barcode)
              cursor.execute(SQL_update_value, (new_value, vial_barcode))
              cnx.commit()
