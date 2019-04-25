@@ -29,7 +29,7 @@ cursor = cnx.cursor()
 
 #Define the chembl database connection
 #che_cnx= mysqlc.connect(user='dbuser', password='dbpass', host='195.148.30.95', database='chembl_24')
-che_cnx=mysqlc.connect(ption_files=args.chembl_conf)
+che_cnx=mysqlc.connect(option_files=args.chembl_conf)
 che_cursor = che_cnx.cursor()
 
 SQL_create_table_if_needed = ('CREATE TABLE IF NOT EXISTS unichem_links(comp_num INT, formula VARCHAR(200), mol_weight_ob DECIMAL(6,3), filename VARCHAR(500), chembl_id BIGINT(20), data BLOB, date DATE, PRIMARY KEY (comp_num)) ENGINE=INNODB;')
@@ -42,6 +42,8 @@ SQL_update_mol_prop = ('UPDATE molecule_data SET formula = %s, mol_weight_ob = %
 
 cursor.execute(SQL_query, )
 comp_list=cursor.fetchall()
+
+output = pybel.Outputfile("mol2", "finchem_molecule.mol2")
 
 for (comp_num, inchi, inchikey) in comp_list:
   #print(inchikey, comp_num)
@@ -63,6 +65,7 @@ for (comp_num, inchi, inchikey) in comp_list:
     
     
     mol=pybel.readstring("inchi", inchi)
+    mol.title=("finchem_" + str(comp_num))
     ickey=str.strip(inchikey)
     print(ickey)
     SQL_chembl_query=('SELECT molregno FROM compound_structures WHERE standard_inchi_key = %s;')
@@ -93,7 +96,10 @@ for (comp_num, inchi, inchikey) in comp_list:
     cursor.execute(SQL_update_value, (mol.formula, mol.molwt, mol.write("sdf"), comp_num))
     cnx.commit()
     cursor = cnx.cursor()
-    
+     
+    output.write(mol)
+
+output.close()
 #    #Add other data
 #    SQL_update_value = ('UPDATE molecule_data SET mol_weight_ob = %s WHERE comp_num = %s ;' )
 #    cursor.execute(SQL_update_value, (mol.molwt, comp_num))
