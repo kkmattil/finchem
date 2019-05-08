@@ -32,7 +32,7 @@ cursor = cnx.cursor()
 che_cnx=mysqlc.connect(option_files=args.chembl_conf)
 che_cursor = che_cnx.cursor()
 
-SQL_create_table_if_needed = ('CREATE TABLE IF NOT EXISTS unichem_links(comp_num INT, formula VARCHAR(200), mol_weight_ob DECIMAL(6,3), filename VARCHAR(500), chembl_id BIGINT(20), data BLOB, date DATE, PRIMARY KEY (comp_num)) ENGINE=INNODB;')
+SQL_create_table_if_needed = ('CREATE TABLE IF NOT EXISTS molecule_data(comp_num INT, formula VARCHAR(200), mol_weight_ob DECIMAL(6,3), filename VARCHAR(500), chembl_molregno BIGINT(20), chembl_id VARCHAR(20), data BLOB, date DATE, PRIMARY KEY (comp_num)) ENGINE=INNODB;')
 cursor.execute(SQL_create_table_if_needed)
 cnx.commit()
 cursor = cnx.cursor()
@@ -43,7 +43,7 @@ SQL_update_mol_prop = ('UPDATE molecule_data SET formula = %s, mol_weight_ob = %
 cursor.execute(SQL_query, )
 comp_list=cursor.fetchall()
 
-output = pybel.Outputfile("mol2", "finchem_molecule.mol2")
+output = pybel.Outputfile("sdf", "finchem_molecules.sd")
 
 for (comp_num, inchi, inchikey) in comp_list:
   #print(inchikey, comp_num)
@@ -78,11 +78,23 @@ for (comp_num, inchi, inchikey) in comp_list:
        regnorow=regnolist[0]
        regno=regnorow[0]
        print("ChemBL regno:", regno)
-       SQL_update_value = ('UPDATE molecule_data SET chembl_id = %s WHERE comp_num = %s ;' )
+       SQL_chembl_query=('SELECT chembl_id FROM molecule_dictionary WHERE molregno = %s;')
+       che_cursor.execute(SQL_chembl_query,(regno,) )
+       chembl_id_list=che_cursor.fetchall()
+       chembl_id_row=chembl_id_list[0]
+       chembl_id=chembl_id_row[0]  
+       print("ChEMBL regno:", regno, " Chembl_ID:", chembl_id)
+       SQL_update_value = ('UPDATE molecule_data SET chembl_molregno = %s WHERE comp_num = %s ;' )
        #print(update_value, new_value, vial_barcode)
        cursor.execute(SQL_update_value, (regno, comp_num))
        cnx.commit()
        cursor = cnx.cursor()
+       SQL_update_value = ('UPDATE molecule_data SET chembl_id = %s WHERE comp_num = %s ;' )
+       #print(update_value, new_value, vial_barcode)
+       cursor.execute(SQL_update_value, (chembl_id, comp_num))
+       cnx.commit()
+       cursor = cnx.cursor()
+       
 
     else:
        print("InChI_key", ickey, "does not have mactch in Chembl" )
@@ -100,6 +112,9 @@ for (comp_num, inchi, inchikey) in comp_list:
     output.write(mol)
 
 output.close()
+
+
+
 #    #Add other data
 #    SQL_update_value = ('UPDATE molecule_data SET mol_weight_ob = %s WHERE comp_num = %s ;' )
 #    cursor.execute(SQL_update_value, (mol.molwt, comp_num))

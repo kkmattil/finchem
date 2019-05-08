@@ -14,6 +14,7 @@ from argparse import ArgumentParser
 from rdkit import DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
 import mysql.connector as mysqlc
+import os
 
 #Define command line options and defaults
 parser = ArgumentParser()
@@ -29,10 +30,17 @@ parser.add_argument("-n", "--inputformat", dest="inputformat", default="sdf",
                     help="input format", metavar="INPUT")
 parser.add_argument("-f", "--format", dest="mol_format", default="mol2",
                     help="Input Format", metavar="FORMAT")
+parser.add_argument("-p", "--prepare_ligads", dest="prepare_ligands", default="y",
+                    help="Run ligand preparation script", metavar="FORMAT")
 parser.add_argument("-c", "--mysqlconf", dest="mysql_conf", default="/home/kkmattil/Documents/DDCB/mysql_write.conf",
                     help="MySQL_conf_finscreen", metavar="MYSQL_CONF")
 args = parser.parse_args()
 
+input_file=args.input_data
+if args.prepare_ligands == "y":
+    prepare_command=("bash prepare_ligands.sh " + str(args.infilename) + " " + str(args.infilename) + "_prepared" )
+    os.system(prepare_command)
+    input_file=(str(args.infilename) + "_prepared")
 
 #Define the database connection
 cnx = mysqlc.connect(option_files=args.mysql_conf)
@@ -48,7 +56,7 @@ cursor = cnx.cursor()
 
 if args.inputformat == "sfd":
    w = Chem.SDWriter('foo.sdf')
-   inchi_infile = open(args.input_data,  'r')
+   inchi_infile = open(input_file,  'r')
    for line in inchi_infile:
        print(line.strip())
        mol=Chem.MolFromInchi(line.strip())
@@ -57,7 +65,7 @@ if args.inputformat == "sfd":
 
 #fps_query=dict()
 
-query_set = Chem.SDMolSupplier(args.input_data)
+query_set = Chem.SDMolSupplier(input_file)
 #for query_mol in query_set:
 #    query_name=query_mol.GetProp("_Name")
 #    fp_query=FingerprintMols.FingerprintMol(query_mol)
@@ -94,3 +102,5 @@ for ref_mol in reference_set:
            cursor = cnx.cursor()
            
            print(query_name, " ", ref_name, " ", simi)
+
+
